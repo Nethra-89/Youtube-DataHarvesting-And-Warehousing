@@ -1,400 +1,79 @@
-from googleapiclient.discovery import build
-import pymongo
-import psycopg2
-import pandas as pd
-import streamlit as st
+YouTube Data Harvesting and Warehousing
+Introduction
 
-#API key connection
+YouTube Data Harvesting and Warehousing is a project aimed at developing a user-friendly Streamlit application that leverages the power of the Google API to extract valuable information from YouTube channels. The extracted data is then stored in a MongoDB database, subsequently migrated to a SQL data warehouse, and made accessible for analysis and exploration within the Streamlit app.
 
-def Api_connect():
-    Api_Id="AIzaSyARU83mtGmJ4diggZkxXOaMTaDhY5PTCYg"
+Table of Contents
 
-    api_service_name="youtube"
-    api_version="v3"
+Key Technologies and Skills
+Installation
+Usage
+Features
+Retrieving data from the YouTube API
+Storing data in MongoDB
+Migrating data to a SQL data warehouse
+Data Analysis
+Contributing
+License
+Contact
+Key Technologies and Skills
 
-    youtube=build(api_service_name,api_version,developerKey=Api_Id)
+Python scripting
+Data Collection
+API integration
+Streamlit
+Plotly
+Data Management using MongoDB (Atlas) and SQL
+Installation
 
-    return youtube
+To run this project, you need to install the following packages:
 
-youtube=Api_connect()
+pip install google-api-python-client
+pip install pymongo
+pip install pandas
+pip install psycopg2
+pip install streamlit
+pip install plotly
+Usage
 
-#get channels information
-def get_channel_info(channel_id):
-    request=youtube.channels().list(
-                    part="snippet,ContentDetails,statistics",
-                    id=channel_id
-)
-    response=request.execute()
+To use this project, follow these steps:
 
-    for i in response['items']:
-         data=dict(Channel_Name=i["snippet"]["title"],
-                 Channel_Id=i["id"],
-                 Subscribers=i['statistics']['subscriberCount'],
-                 Views=i["statistics"]["viewCount"],
-                 Total_Videos=i["statistics"]["videoCount"],
-                 Channel_Description=i["snippet"]["description"],
-                 Playlist_Id=i["contentDetails"]["relatedPlaylists"]["uploads"])
-         return data
-    
+Clone the repository: git clone https://github.com/gopiashokan/Youtube-Harvesting-and-Warehousing.git
+Install the required packages: pip install -r requirements.txt
+Run the Streamlit app: streamlit run app.py
+Access the app in your browser at http://localhost:8501
+Features
 
-    #get video ids
-def get_videos_ids(channel_id):
-    video_ids=[]
-    response= youtube.channels().list(id=channel_id,
-                                     part='contentDetails').execute()
-    Playlist_Id=response['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+Retrieve data from the YouTube API, including channel information, playlists, videos, and comments.
+Store the retrieved data in a MongoDB database.
+Migrate the data to a SQL data warehouse.
+Analyze and visualize data using Streamlit and Plotly.
+Perform queries on the SQL data warehouse.
+Gain insights into channel performance, video metrics, and more.
+Retrieving data from the YouTube API
 
-    next_page_token=None
+The project utilizes the Google API to retrieve comprehensive data from YouTube channels. The data includes information on channels, playlists, videos, and comments. By interacting with the Google API, we collect the data and merge it into a JSON file.
 
-    while True: 
-      response=youtube.playlistItems().list(
-                                          part='snippet',
-                                          playlistId=Playlist_Id,
-                                          maxResults=50,
-                                          pageToken=next_page_token).execute()
-    
-      for i in range(len(response['items'])):
-                  video_ids.append(response['items'][i]['snippet']['resourceId']['videoId'])
-      next_page_token=response.get('nextPageToken')
+Storing data in MongoDB
 
-      if next_page_token is None:
-                   break
-    return video_ids
+The retrieved data is stored in a MongoDB database based on user authorization. If the data already exists in the database, it can be overwritten with user consent. This storage process ensures efficient data management and preservation, allowing for seamless handling of the collected data.
 
-#get video information
-def get_video_info(Video_Ids):
-        video_data=[]
-        for video_id in Video_Ids:
-           request=youtube.videos().list(
-            part="snippet,ContentDetails,statistics",
-            id=video_id
-           )
-        response=request.execute()
+Migrating data to a SQL data warehouse
 
-        for item in response["items"]:
-            data=dict(Channel_Name=item['snippet']['channelTitle'],
-                  Channel_Id=item['snippet']['channelId'],
-                  Video_Id=item['id'],
-                  Title=item['snippet']['title'],
-                  Tags=item['snippet'].get('tags'),
-                  Description=item['snippet'].get('description'),
-                  Published_Date=item['snippet']['publishedAt'],
-                  Duration=item['contentDetails']['duration'],
-                  Views=item['statistics'].get('viewCount'),
-                  Likes=item['statistics'].get('likeCount'),
-                  Comments=item['statistics'].get('commentCount'),
-                  Favorite_Count=item['statistics']['favoriteCount'],
-                  Definition=item['contentDetails']['definition'],
-                  Caption_Status=item['contentDetails']['caption']
-                  )
-            video_data.append(data)
-        return video_data
+The application allows users to migrate data from MongoDB to a SQL data warehouse. Users can choose which channel's data to migrate. To ensure compatibility with a structured format, the data is cleansed using the powerful pandas library. Following data cleaning, the information is segregated into separate tables, including channels, playlists, videos, and comments, utilizing SQL queries.
 
-#get comment information
-def get_comment_info(Videos_Ids):
-     Comment_data=[]
-     try:
-        for video_id in Videos_Ids:
-             request=youtube.commentThreads().list(
-                 part="snippet",
-                 videoId=video_id ,
-                maxResults=50
-            )
-        response=request.execute()
+Data Analysis
 
-        for item in response['items']:
-             data=dict(Comment_Id=item['snippet']['topLevelComment']['id'],
-                  Video_Id=item['snippet']['topLevelComment']['snippet']['videoId'],
-                  Comment_Text=item['snippet']['topLevelComment']['snippet']['textDisplay'],
-                  Comment_Author=item['snippet']['topLevelComment']['snippet']['authorDisplayName'],
-                  Comment_Published=item['snippet']['topLevelComment']['snippet']['publishedAt'])
-             Comment_data.append(data)
-     except:
-          pass
-     return Comment_data
+The project provides comprehensive data analysis capabilities using Plotly and Streamlit. With the integrated Plotly library, users can create interactive and visually appealing charts and graphs to gain insights from the collected data.
 
+Channel Analysis: Channel analysis includes insights on playlists, videos, subscribers, views, likes, comments, and durations. Gain a deep understanding of the channel's performance and audience engagement through detailed visualizations and summaries.
 
-#upload to mongoDB
-client=pymongo.MongoClient("mongodb+srv://Nethra:TlKBjLEAeFKtNQUJ@cluster0.eq1776g.mongodb.net/?retryWrites=true&w=majority")
-db=client["Youtube_data"]
+Video Analysis: Video analysis focuses on views, likes, comments, and durations, enabling both an overall channel and specific channel perspectives. Leverage visual representations and metrics to extract valuable insights from individual videos.
 
-def channels_details(channel_id):
-     ch_details=get_channel_info(channel_id)
-     vi_ids= get_videos_ids(channel_id)
-     vi_details= get_video_info(vi_ids)
-     com_details=get_comment_info(vi_ids)
+Utilizing the power of Plotly, users can create various types of charts, including line charts, bar charts, scatter plots, pie charts, and more. These visualizations enhance the understanding of the data and make it easier to identify patterns, trends, and correlations.
 
-     Coll1=db["channel_details"]
-     Coll1.insert_one({"channel_information":ch_details,"video_information":vi_details,"comment_information":com_details})
-    
-     return"upload completed successfully"
+The Streamlit app provides an intuitive interface to interact with the charts and explore the data visually. Users can customize the visualizations, filter data, and zoom in or out to focus on specific aspects of the analysis.
 
-#Table creation for channels,videos,comments
-def channels_table():
-     mydb=psycopg2.connect(host="localhost",
-                      user="postgres",
-                      password="Nethra",
-                      database="youtube_data",
-                      port="5432")
-     cursor=mydb.cursor()
-
-     drop_query='''drop table if exists channels'''
-     cursor.execute(drop_query)
-     mydb.commit()
-   
-     try:
-        create_query='''create table if not exists channels(Channel_Name varchar(100),Channel_Id varchar(80) primary key,Subscribers bigint,Views bigint,Total_Videos int,Channel_Description text)'''
-        cursor.execute(create_query)
-        mydb.commit()
-
-     except:
-        print("Channels table already created")
-    
-        ch_list=[]
-        db=client["Youtube_data"]
-        coll1=db["channel_details"]
-        for ch_data in coll1.find({},{"_id":0,"channel_information":1}):
-             ch_list.append(ch_data["channel_information"])
-        df=pd.DataFrame(ch_list)
-
-        for index,row in df.iterrows():
-                 insert_query='''insert into channels(Channel_Name,Channel_Id,Subscribers,Views,Total_Videos,Channel_Description)
-                values(%s,%s,%s,%s,%s,%s)'''
-        
-        
-        values=(row['Channel_Name'],
-            row['Channel_Id'],
-            row['Subscribers'],
-            row['Views'],
-            row['Total_Videos'],
-            row['Channel_Description'])
-        try:
-           cursor.execute(insert_query,values)
-           mydb.commit()
-
-        except:
-           print("Channel values are already inserted")
-
-def videos_table():
-        mydb=psycopg2.connect(host="localhost",
-                                user="postgres",
-                                password="Nethra",
-                                database="youtube_data",
-                                port="5432")
-        cursor=mydb.cursor()
-            
-        drop_query='''drop table if exists videos'''
-        cursor.execute(drop_query)
-        mydb.commit()
-
-        create_query='''create table if not exists videos(Channel_Name  varchar(100),Channel_Id varchar(100),
-                                Video_Id varchar(30) primary key,
-                                Title varchar(150),
-                                Tags text,
-                                Description text,
-                                Published_Date timestamp,
-                                Duration interval,
-                                Views bigint,
-                                Likes bigint,
-                                Comments int,
-                                Favorite_Count int,
-                                Definition varchar(10),
-                                Caption_Status varchar(50)
-                                )'''
-        cursor.execute(create_query)
-        mydb.commit()
-
-        vi_list=[]
-        db=client["Youtube_data"]
-        coll1=db["channel_details"]
-        for vi_data in coll1.find({},{"_id":0,"video_information":1}):
-            for i in range(len(vi_data["video_information"])):
-              vi_list.append(vi_data["video_information"][i])
-        df2=pd.DataFrame(vi_list)
-        for index,row in df2.iterrows():
-                 insert_query='''insert into videos(Channel_Name,
-                                                    Channel_Id,
-                                                    Video_Id,
-                                                    Title,
-                                                    Tags,
-                                                    Description,
-                                                    Published_Date,
-                                                    Duration,
-                                                    Views,
-                                                    Likes,
-                                                    Comments,
-                                                    Favorite_Count,
-                                                    Definition,
-                                                    Caption_Status 
-                                                )
-                                                values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-                 values=(row['Channel_Name'],
-                                    row['Channel_Id'],
-                                    row['Video_Id'],
-                                    row['Title'],
-                                    row['Tags'],
-                                    row['Description'],
-                                    row['Published_Date'],
-                                    row['Duration'],
-                                    row['Views'],
-                                    row['Likes'],
-                                    row['Comments'],
-                                    row['Favorite_Count'],
-                                    row['Definition'],
-                                    row['Caption_Status']
-                                    )
-                 cursor.execute(insert_query,values)
-                 mydb.commit()
-
-def comments_tables():
-            mydb=psycopg2.connect(host="localhost",
-                            user="postgres",
-                            password="Nethra",
-                            database="youtube_data",
-                            port="5432")
-            cursor=mydb.cursor()
-            
-            
-            drop_query='''drop table if exists comments'''
-            cursor.execute(drop_query)
-            mydb.commit()
-
-
-            create_query='''create table if not exists comments(Comment_Id varchar(100) primary key,
-                            Video_Id varchar(50),
-                            Comment_Text text,
-                            Comment_Author varchar(150),
-                            Comment_Published timestamp
-                            )'''
-
-            cursor.execute(create_query)
-            mydb.commit()
-            com_list=[]
-            db=client["Youtube_data"]
-            coll1=db["channel_details"]
-            for com_data in coll1.find({},{"_id":0,"comment_information":1}):
-                for i in range(len(com_data["comment_information"])):
-                 com_list.append(com_data["comment_information"][i])
-            df3=pd.DataFrame(com_list)
-
-            for index,row in df3.iterrows():
-                           insert_query='''insert into comments(Comment_Id,
-                                                Video_Id,
-                                                Comment_Text,
-                                                Comment_Author,
-                                                Comment_Published
-                                                )
-                                                
-                                                values(%s,%s,%s,%s,%s)'''
-
-            values=(row['Comment_Id'],
-                        row['Video_Id'],
-                        row['Comment_Text'],
-                        row['Comment_Author'],
-                        row['Comment_Published']
-                        )
-
-            cursor.execute(insert_query,values)
-            mydb.commit()
-def tables():
-    channels_table()
-    videos_table()
-    comments_tables()
-
-    return"Tables Created Successfully"
-
-def show_channels_table():
-    ch_list=[]
-    db=client["Youtube_data"]
-    coll1=db["channel_details"]
-    for ch_data in coll1.find({},{"_id":0,"channel_information":1}):
-        ch_list.append(ch_data["channel_information"])
-    df=st.dataframe(ch_list)
-
-    return df
-
-def show_videos_table():
-    vi_list=[]
-    db=client["Youtube_data"]
-    coll1=db["channel_details"]
-    for vi_data in coll1.find({},{"_id":0,"video_information":1}):
-        for i in range(len(vi_data["video_information"])):
-            vi_list.append(vi_data["video_information"][i])
-        df2=st.dataframe(vi_list)
-
-    return df2
-
-def show_comments_tables():
-    com_list=[]
-    db=client["Youtube_data"]
-    coll1=db["channel_details"]
-    for com_data in coll1.find({},{"_id":0,"comment_information":1}):
-            for i in range(len(com_data["comment_information"])):
-                 com_list.append(com_data["comment_information"][i])
-    df3=pd.dataframe(com_list)
-
-    return df3
-
-
-#streamlit part
-
-with st.sidebar:
-     st.title(":green[YOUTUBE DATA HARVESTING AND WAREHOUSING]")
-     st.header("Digital Analytics")
-     st.caption("Data Collection")
-     st.caption("Data Entry in Mongodb")
-     st.caption("Data Migration To SQL")
-     st.caption("Data Analysis")
-
-channel_id=st.text_input("Enter the channel ID")
-
-if st.button("collect and store data"):
-    ch_ids=[]
-    db=client["Youtube_Data"]
-    coll1=db["channel_details"]
-    for ch_data in coll1.find({},{"_id":0,"channel_information":1}): 
-         ch_ids.append(ch_data["channels_information"]["Channel_Id"]) 
-
-if channel_id in ch_ids:
-         st.success("Channel Details of the given channel id already exists")
-
-else:
-        insert= channels_details(channel_id)
-        st.success(insert) 
-
-if st.button("Migrate to Sql"):
-             Table=tables()
-             st.success(Table)
-             
-show_table=st.radio("SELECT THE TABLE FOR VIEW",("CHANNELS","VIDEOS","COMMENTS"))
-
-if show_table=="CHANNELS":
-  show_channels_table()
-
-elif show_table=="VIDEOS":
-  show_videos_table()
-
-elif show_table=="COMMENTS":
-   show_comments_tables()  
-
-   #SQL Connection
-
-mydb=psycopg2.connect(host="localhost",
-                        user="postgres",
-                        password="Nethra",
-                        database="youtube_data",
-                        port="5432")
-cursor=mydb.cursor()
-
-question=st.selectbox("Select your question",("1.What are the names of all the videos and their corresponding channels?",
-                      "2. Which channels have the most number of videos, and how many videos do they have?",
-                      "3. What are the top 10 most viewed videos and their respective channels?",
-                      "4. How many comments were made on each video, and what are their corresponding video names?",
-                      "5. Which videos have the highest number of likes, and what are their corresponding channel names?",
-                      "6. What is the total number of likes and dislikes for each video, and what are their corresponding video names?",
-                      "7. What is the total number of views for each channel, and what are their corresponding channel names?",
-                      "8. What are the names of all the channels that have published videos in the year  2022?",
-                      "9. What is the average duration of all videos in each channel, and what are their corresponding channel names?",
-                      "10. Which videos have the highest number of comments, and what are their corresponding channel names?"))
+With the combined capabilities of Plotly and Streamlit, the Data Analysis section empowers users to uncover valuable insights and make data-driven decisions.
 
          
