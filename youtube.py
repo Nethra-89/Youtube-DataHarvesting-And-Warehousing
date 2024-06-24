@@ -1,8 +1,8 @@
-from googleapiclient.discovery import build  # type: ignore
-import pymongo # type: ignore
-import psycopg2 # type: ignore
-import pandas as pd # type: ignore
-import streamlit as st # type: ignore
+from googleapiclient.discovery import build 
+import pymongo 
+import psycopg2 
+import pandas as pd 
+import streamlit as st 
 
 #API Key connection
 
